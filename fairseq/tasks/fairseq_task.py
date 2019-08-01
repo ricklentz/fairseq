@@ -1,9 +1,7 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the license found in the LICENSE file in
-# the root directory of this source tree. An additional grant of patent rights
-# can be found in the PATENTS file in the same directory.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 import torch
 
@@ -195,7 +193,6 @@ class FairseqTask(object):
                 max_len_a=getattr(args, 'max_len_a', 0),
                 max_len_b=getattr(args, 'max_len_b', 200),
                 min_len=getattr(args, 'min_len', 1),
-                stop_early=(not getattr(args, 'no_early_stop', False)),
                 normalize_scores=(not getattr(args, 'unnormalized', False)),
                 len_penalty=getattr(args, 'lenpen', 1),
                 unk_penalty=getattr(args, 'unkpen', 0),

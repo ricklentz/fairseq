@@ -1,9 +1,7 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the license found in the LICENSE file in
-# the root directory of this source tree. An additional grant of patent rights
-# can be found in the PATENTS file in the same directory.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 import argparse
 
@@ -450,9 +448,7 @@ def add_generation_args(parser):
     group.add_argument('--match-source-len', default=False, action='store_true',
                        help=('generations should match the source length'))
     group.add_argument('--no-early-stop', action='store_true',
-                       help=('continue searching even after finalizing k=beam '
-                             'hypotheses; this is more correct, but increases '
-                             'generation time by 50%%'))
+                       help='deprecated')
     group.add_argument('--unnormalized', action='store_true',
                        help='compare unnormalized hypothesis scores')
     group.add_argument('--no-beamable-mm', action='store_true',

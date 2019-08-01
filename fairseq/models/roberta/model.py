@@ -1,9 +1,7 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the license found in the LICENSE file in
-# the root directory of this source tree. An additional grant of patent rights
-# can be found in the PATENTS file in the same directory.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 """
 RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
@@ -75,6 +73,8 @@ class RobertaModel(FairseqLanguageModel):
                             help='dropout probability after activation in FFN')
         parser.add_argument('--pooler-dropout', type=float, metavar='D',
                             help='dropout probability in the masked_lm pooler layers')
+        parser.add_argument('--max-positions', type=int,
+                            help='number of positional embeddings to learn')
 
     @classmethod
     def build_model(cls, args, task):
@@ -131,6 +131,15 @@ class RobertaModel(FairseqLanguageModel):
                 prefix + 'classification_heads.' + head_name + '.dense.weight'
             ].size(0)
             self.register_classification_head(head_name, num_classes, inner_dim)
+
+        # Copy any newly-added classification heads into the state dict
+        # with their current weights.
+        if hasattr(self, 'classification_heads'):
+            cur_state = self.classification_heads.state_dict()
+            for k, v in cur_state.items():
+                if prefix + 'classification_heads.' + k not in state_dict:
+                    print('Overwriting', prefix + 'classification_heads.' + k)
+                    state_dict[prefix + 'classification_heads.' + k] = v
 
 
 class RobertaLMHead(nn.Module):
