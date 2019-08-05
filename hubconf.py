@@ -13,9 +13,6 @@ from fairseq.models import MODEL_REGISTRY
 dependencies = [
     'regex',
     'requests',
-    'sacremoses',
-    'sentencepiece',
-    'subword_nmt',
     'torch',
 ]
 
