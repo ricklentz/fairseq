@@ -13,50 +13,35 @@ from fairseq import utils
 from . import FairseqCriterion, register_criterion
 
 
-@register_criterion('sentence_prediction')
-class SentencePredictionCriterion(FairseqCriterion):
-
-    @staticmethod
-    def add_args(parser):
-        # fmt: off
-        parser.add_argument('--save-predictions', metavar='FILE',
-                            help='file to save predictions to')
-        # fmt: on
+@register_criterion('sentence_ranking')
+class SentenceRankingCriterion(FairseqCriterion):
 
     def forward(self, model, sample, reduce=True):
-        """Compute the loss for the given sample.
+        """Compute ranking loss for the given sample.
 
         Returns a tuple with three elements:
         1) the loss
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
-        assert hasattr(model, 'classification_heads') and \
-            'sentence_classification_head' in model.classification_heads, \
-            "model must provide sentence classification head for --criterion=sentence_prediction"
+        scores = []
+        for idx in range(self.args.num_classes):
+            score, _ = model(
+                **sample['net_input{idx}'.format(idx=idx+1)],
+                features_only=True,
+                classification_head_name='sentence_classification_head',
+            )
+            scores.append(score)
 
-        logits, _ = model(
-            **sample['net_input'],
-            features_only=True,
-            classification_head_name='sentence_classification_head',
-        )
+        logits = torch.cat(scores, dim=1)
         targets = model.get_targets(sample, [logits]).view(-1)
         sample_size = targets.numel()
 
-        if not self.args.regression_target:
-            loss = F.nll_loss(
-                F.log_softmax(logits, dim=-1, dtype=torch.float32),
-                targets,
-                reduction='sum',
-            )
-        else:
-            logits = logits.squeeze().float()
-            targets = targets.float()
-            loss = F.mse_loss(
-                logits,
-                targets,
-                reduction='sum',
-            )
+        loss = F.nll_loss(
+            F.log_softmax(logits, dim=-1, dtype=torch.float32),
+            targets,
+            reduction='sum',
+        )
 
         logging_output = {
             'loss': utils.item(loss.data) if reduce else loss.data,
@@ -64,12 +49,9 @@ class SentencePredictionCriterion(FairseqCriterion):
             'nsentences': sample_size,
             'sample_size': sample_size,
         }
-
-        if not self.args.regression_target:
-            preds = logits.max(dim=1)[1]
-            logging_output.update(
-                ncorrect=(preds == targets).sum().item()
-            )
+        logging_output.update(
+            ncorrect=(logits.max(dim=1)[1] == targets).sum().item()
+        )
         return loss, sample_size, logging_output
 
     @staticmethod
