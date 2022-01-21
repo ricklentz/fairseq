@@ -4,9 +4,11 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
+
 import argparse
 import json
 import os
+import re
 
 
 class InputExample:
@@ -23,7 +25,7 @@ def get_examples(data_dir, set_type):
     examples = []
 
     levels = ["middle", "high"]
-    set_type_c = set_type.split('-')
+    set_type_c = set_type.split("-")
     if len(set_type_c) == 2:
         levels = [set_type_c[1]]
         set_type = set_type_c[0]
@@ -31,12 +33,13 @@ def get_examples(data_dir, set_type):
         cur_dir = os.path.join(data_dir, set_type, level)
         for filename in os.listdir(cur_dir):
             cur_path = os.path.join(cur_dir, filename)
-            with open(cur_path, 'r') as f:
+            with open(cur_path, "r") as f:
                 cur_data = json.load(f)
                 answers = cur_data["answers"]
                 options = cur_data["options"]
                 questions = cur_data["questions"]
                 context = cur_data["article"].replace("\n", " ")
+                context = re.sub(r"\s+", " ", context)
                 for i in range(len(answers)):
                     label = ord(answers[i]) - ord("A")
                     qa_list = []
@@ -47,6 +50,7 @@ def get_examples(data_dir, set_type):
                             qa_cat = question.replace("_", option)
                         else:
                             qa_cat = " ".join([question, option])
+                        qa_cat = re.sub(r"\s+", " ", qa_cat)
                         qa_list.append(qa_cat)
                     examples.append(InputExample(context, qa_list, label))
 
@@ -60,33 +64,39 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input-dir",
-        help='input directory for downloaded RACE dataset',
+        help="input directory for downloaded RACE dataset",
     )
     parser.add_argument(
         "--output-dir",
-        help='output directory for extracted data',
+        help="output directory for extracted data",
     )
     args = parser.parse_args()
 
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir, exist_ok=True)
+
     for set_type in ["train", "dev", "test-middle", "test-high"]:
         examples = get_examples(args.input_dir, set_type)
-        qa_file_paths = [args.output_dir + set_type + ".input" + str(i + 1) for i in range(4)]
-        qa_files = [open(qa_file_path, 'w') for qa_file_path in qa_file_paths]
-        outf_context_path = args.output_dir + set_type + ".input0"
-        outf_label_path = args.output_dir + set_type + ".label"
-        outf_context = open(outf_context_path, 'w')
-        outf_label = open(outf_label_path, 'w')
+        qa_file_paths = [
+            os.path.join(args.output_dir, set_type + ".input" + str(i + 1))
+            for i in range(4)
+        ]
+        qa_files = [open(qa_file_path, "w") for qa_file_path in qa_file_paths]
+        outf_context_path = os.path.join(args.output_dir, set_type + ".input0")
+        outf_label_path = os.path.join(args.output_dir, set_type + ".label")
+        outf_context = open(outf_context_path, "w")
+        outf_label = open(outf_label_path, "w")
         for example in examples:
-            outf_context.write(example.paragraph + '\n')
+            outf_context.write(example.paragraph + "\n")
             for i in range(4):
-                qa_files[i].write(example.qa_list[i] + '\n')
-            outf_label.write(str(example.label) + '\n')
-        
+                qa_files[i].write(example.qa_list[i] + "\n")
+            outf_label.write(str(example.label) + "\n")
+
         for f in qa_files:
             f.close()
         outf_label.close()
         outf_context.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
